@@ -1,9 +1,3 @@
-import "./style.css";
-import { sum } from "./sum";
-
-export { sum } from "./sum";
-
-console.log(sum(1, 2));
 import { Model, Presenter, View } from "./framework";
 
 interface Todo {
@@ -22,7 +16,7 @@ todoModel.data = [
   { id: 2, text: "Hacer ejercicio", done: true },
   { id: 3, text: "Leer un libro", done: false },
 ];
-const root = document.getElementById("app") || document.createElement("div");
+const root = document.getElementById("todo-list");
 const template: (data: Todo[]) => string = (data: Todo[]) => {
   return `
     <ul>
@@ -32,7 +26,6 @@ const template: (data: Todo[]) => string = (data: Todo[]) => {
 };
 
 const todoPresenter = new Presenter<Todo[]>(todoModel, template, root);
-const todoView = new View<Todo[]>(root, template, todoPresenter);
 
 todoPresenter.data = [
   { id: 1, text: "Comprar leche", done: false },
@@ -45,4 +38,3 @@ todoPresenter.data = [
   { id: 2, text: "Hacer ejercicio", done: true },
   { id: 3, text: "Leer un libro", done: false },
 ];
-todoView.render();
