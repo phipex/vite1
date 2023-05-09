@@ -42,6 +42,10 @@ export class Model<T> {
   getState$(): Observable<T> {
     return this.state$;
   }
+
+  update(): void {
+    this.state$.notify(this.state);
+  }
 }
 
 // Clase Presenter que se encarga de manejar la lógica de la aplicación
@@ -55,7 +59,8 @@ export class Presenter<T> {
     this.model = model;
 
     // Suscribirse al Observable del modelo para actualizar la vista en caso de cambio
-    this.model.getState$().subscribe(() => {
+    this.model.getState$().subscribe((data: T) => {
+      console.log("data change", data);
       this.view.render();
     });
   }
