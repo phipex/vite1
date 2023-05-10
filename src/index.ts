@@ -8,6 +8,47 @@ export { sum } from "./sum";
 
 console.log(sum(1, 2));
 
+const configRecovered = {
+  recovered: {
+    amount: 1,
+    totalBet: 100,
+    userDeno: 100,
+    idBonus: 0,
+    card: [27, 29, 43, 15, 9],
+    last_request: "bet",
+    idPlaySession: 199401,
+  },
+  maxBet: "10",
+  maxPrizeMult: "2",
+  deno: [100, 2000],
+  minBet: "1",
+  doubleUpEnable: true,
+};
+
+const drawRequest = {
+  heldCards: [27, 29, 43, 15],
+};
+const drawRespose = {
+  cards: [27, 29, 43, 15, 2],
+  bonusNonrestricted: 0,
+  nameHand: "Nothing",
+  idPlaysession: 199401,
+  candoubleup: false,
+  idHand: 0,
+  bonusRestricted: 0,
+  win: 0,
+  gain: 0,
+};
+
+const endGameRequest = {
+  idPlaysession: 199401,
+};
+
+const endGameResponse = {
+  idPlaysession: 199401,
+  bonusRestricted: 0,
+  bonusNonrestricted: 0,
+};
 export interface Request {
   gpUser: string;
   system: string;
