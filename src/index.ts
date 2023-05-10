@@ -332,7 +332,7 @@ class PokerPresenter extends Presenter<PokerGame> {
 
 const pokerGame = new PokerGame();
 const model = new PokerModel(pokerGame);
-const view = new PokerView();
+const view = new PokerView(model);
 const presenter = new PokerPresenter(view, model);
 
 presenter.initGame().then(() => view.bet());
