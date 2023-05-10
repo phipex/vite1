@@ -1,6 +1,7 @@
 // Definición de la interfaz de la vista
-export interface View {
+export interface View<T> {
   render(): void;
+  getModel(): Model<T>;
 }
 
 // Clase Observable para implementar el enfoque reactivo

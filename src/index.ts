@@ -249,17 +249,23 @@ class PokerModel extends Model<PokerGame> {
   }
 }
 
-class PokerView implements View {
+class PokerView implements View<PokerGame> {
+  model: PokerModel;
+
+  constructor(model: PokerModel) {
+    this.model = model;
+  }
+
   betCallback?: (bet: Bet) => void;
 
   render(): void {
-    console.log("model");
+    console.log("render model");
   }
-  showLoadMsg() {
-    console.log("cargando ....");
+  showLoadMsg(msg = ""): void {
+    console.log(msg, "cargando ....");
   }
-  hideLoadMsg() {
-    console.log("finalizo la descarga");
+  hideLoadMsg(msg = "") {
+    console.log(msg, "finalizo la descarga");
   }
   showErrorMsg(e: unknown) {
     console.log("error em la descarga");
@@ -268,8 +274,12 @@ class PokerView implements View {
     this.betCallback = call;
   }
   bet() {
+    console.log("bet");
     if (this.betCallback) {
+      console.log("bet");
       this.betCallback(this.getBetParameters());
+    } else {
+      console.error("no se registro el callback");
     }
   }
 
@@ -281,6 +291,9 @@ class PokerView implements View {
       deno: 100,
     };
   }
+  getModel(): Model<PokerGame> {
+    return this.model;
+  }
 }
 
 class PokerPresenter extends Presenter<PokerGame> {
@@ -288,21 +301,21 @@ class PokerPresenter extends Presenter<PokerGame> {
     super(view, model);
 
     view.subscribeBetCallback(this.betCallback);
-    this.initGame();
+    //this.initGame().catch(console.error);
   }
   async betCallback(bet: Bet): Promise<void> {
     const model = this.getModel() as PokerModel;
     const view = this.getView() as PokerView;
     try {
-      view.showLoadMsg();
-      await model.betRequest(bet);
-      view.hideLoadMsg();
+      view.showLoadMsg("bet");
+      model.betRequest(bet).catch(console.error);
+      view.hideLoadMsg("bet");
     } catch (e) {
       view.showErrorMsg(e);
     }
   }
 
-  private async initGame() {
+  async initGame() {
     const model = this.getModel() as PokerModel;
     const view = this.getView() as PokerView;
     try {
@@ -322,4 +335,4 @@ const model = new PokerModel(pokerGame);
 const view = new PokerView();
 const presenter = new PokerPresenter(view, model);
 
-view.bet();
+presenter.initGame().then(() => view.bet());
