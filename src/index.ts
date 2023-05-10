@@ -69,7 +69,7 @@ class Hand {
 }
 
 class PokerGame {
-  actualHand?: Hand;
+  actualHand?: Hand | number[];
   actualBet?: Bet;
   actualPlaysession?: PlaySession;
   actualBalance?: Balance;
@@ -242,6 +242,7 @@ class PokerModel extends Model<PokerGame> {
       console.log("realizando apuesta");
       this.service.bet(bet).then(playsesion => {
         this.getState().actualPlaysession = playsesion;
+        this.getState().actualHand = playsesion.cards;
         this.update();
         resolve(playsesion);
       });
@@ -277,9 +278,12 @@ class PokerView implements View<PokerGame> {
     console.log("bet");
     if (this.betCallback) {
       console.log("bet");
+      this.showLoadMsg("bet");
       this.betCallback(this.getBetParameters());
+      this.hideLoadMsg("bet");
     } else {
       console.error("no se registro el callback");
+      this.showErrorMsg("no se registro el callback");
     }
   }
 
@@ -305,13 +309,11 @@ class PokerPresenter extends Presenter<PokerGame> {
   }
   async betCallback(bet: Bet): Promise<void> {
     const model = this.getModel() as PokerModel;
-    const view = this.getView() as PokerView;
+
     try {
-      view.showLoadMsg("bet");
       model.betRequest(bet).catch(console.error);
-      view.hideLoadMsg("bet");
     } catch (e) {
-      view.showErrorMsg(e);
+      console.error("", e);
     }
   }
 
