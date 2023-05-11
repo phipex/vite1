@@ -25,7 +25,7 @@ const configRecovered = {
   doubleUpEnable: true,
 };
 
-const drawRequest = {
+const drawRequest: DrawRequest = {
   heldCards: [27, 29, 43, 15],
 };
 const drawRespose = {
@@ -49,6 +49,22 @@ const endGameResponse = {
   bonusRestricted: 0,
   bonusNonrestricted: 0,
 };
+
+export interface DrawResponse {
+  cards: number[];
+  bonusNonrestricted: number;
+  nameHand: string;
+  idPlaysession: number;
+  candoubleup: boolean;
+  idHand: number;
+  bonusRestricted: number;
+  win: number;
+  gain: number;
+}
+
+export interface DrawRequest {
+  heldCards: number[];
+}
 export interface Request {
   gpUser: string;
   system: string;
@@ -119,6 +135,13 @@ class PokerGame {
 }
 
 class PokerServiceMock {
+  draw(draw: DrawRequest): Promise<DrawResponse> {
+    return new Promise<DrawResponse>(resolve => {
+      setTimeout(() => {
+        resolve(drawRespose);
+      }, this.getTimeout());
+    });
+  }
   bet(bet: Bet): Promise<PlaySession> {
     return new Promise<PlaySession>(resolve => {
       setTimeout(() => {
@@ -289,16 +312,27 @@ class PokerModel extends Model<PokerGame> {
       });
     });
   }
+
+  drawRequest(draw: DrawRequest): Promise<DrawResponse> {
+    //this.getState().actualBet = bet;
+    return new Promise<DrawResponse>(resolve => {
+      console.log("realizando apuesta");
+      this.service.draw(draw).then(drawResponse => {
+        this.update();
+        resolve(drawResponse);
+      });
+    });
+  }
 }
 
 class PokerView implements View<PokerGame> {
   model: PokerModel;
+  betCallback?: (bet: Bet) => Promise<void>;
+  drawCallback?: (draw: DrawRequest) => Promise<void>;
 
   constructor(model: PokerModel) {
     this.model = model;
   }
-
-  betCallback?: (bet: Bet) => void;
 
   render(): void {
     console.log("render model");
@@ -312,16 +346,33 @@ class PokerView implements View<PokerGame> {
   showErrorMsg(e: unknown) {
     console.log("error em la descarga");
   }
-  subscribeBetCallback(call: (bet: Bet) => void) {
+  subscribeBetCallback(call: (bet: Bet) => Promise<void>) {
     this.betCallback = call;
   }
-  bet() {
+
+  subscribeDrawCallback(call: (draw: DrawRequest) => Promise<void>) {
+    this.drawCallback = call;
+  }
+  async bet() {
     console.log("bet");
     if (this.betCallback) {
       console.log("bet");
       this.showLoadMsg("bet");
-      this.betCallback(this.getBetParameters());
+      await this.betCallback(this.getBetParameters());
       this.hideLoadMsg("bet");
+    } else {
+      console.error("no se registro el callback");
+      this.showErrorMsg("no se registro el callback");
+    }
+  }
+
+  async draw() {
+    console.log("draw");
+    if (this.drawCallback) {
+      console.log("draw");
+      this.showLoadMsg("draw");
+      await this.drawCallback(this.getDrawParameters());
+      this.hideLoadMsg("draw");
     } else {
       console.error("no se registro el callback");
       this.showErrorMsg("no se registro el callback");
@@ -336,6 +387,12 @@ class PokerView implements View<PokerGame> {
       deno: 100,
     };
   }
+
+  private getDrawParameters(): DrawRequest {
+    //TODO leer de la interfaz
+    return drawRequest;
+  }
+
   getModel(): Model<PokerGame> {
     return this.model;
   }
@@ -346,13 +403,24 @@ class PokerPresenter extends Presenter<PokerGame> {
     super(view, model);
 
     view.subscribeBetCallback(this.betCallback);
+    view.subscribeDrawCallback(this.drawCallback);
     //this.initGame().catch(console.error);
   }
   async betCallback(bet: Bet): Promise<void> {
     const model = this.getModel() as PokerModel;
 
     try {
-      model.betRequest(bet).catch(console.error);
+      await model.betRequest(bet);
+    } catch (e) {
+      console.error("", e);
+    }
+  }
+
+  async drawCallback(draw: DrawRequest): Promise<void> {
+    const model = this.getModel() as PokerModel;
+
+    try {
+      await model.drawRequest(draw);
     } catch (e) {
       console.error("", e);
     }
@@ -378,4 +446,6 @@ const model = new PokerModel(pokerGame);
 const view = new PokerView(model);
 const presenter = new PokerPresenter(view, model);
 
-presenter.initGame().then(() => view.bet());
+await presenter.initGame();
+await view.bet();
+await view.draw();
