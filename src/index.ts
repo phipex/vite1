@@ -56,6 +56,64 @@ const endGameResponse = {
   bonusNonrestricted: 0,
 };
 
+const getDoubleUpRequest = {
+  gameHost: "JOB",
+  gain: 2,
+  contDoubleup: 1,
+};
+
+export interface GetDoubleUpRequest {
+  gameHost: string;
+  gain: number;
+  contDoubleup: number;
+}
+const getDoubleUpResponse = {
+  dealerCard: 52,
+  userDeno: 2.2,
+};
+
+export interface GetDoubleUpResponse {
+  dealerCard: number;
+  userDeno: number;
+}
+
+const validateDoubleUpRequest = {
+  gameHost: "JOB",
+  holdButton: 2,
+  contDoubleup: 1,
+};
+export interface ValidateDoubleUpRequest {
+  gameHost: string;
+  holdButton: number;
+  contDoubleup: number;
+}
+
+const validateDoubleUpResponse = {
+  contDoubleup: 1,
+  cards: [52, 17, 1, 22, 24],
+  candoubleup: true,
+  userDeno: 2.2,
+  win: 8.800000190734863,
+  gain: 4,
+};
+export interface ValidateDoubleUpResponse {
+  contDoubleup: number;
+  cards: number[];
+  candoubleup: boolean;
+  userDeno: number;
+  win: number;
+  gain: number;
+}
+
+export interface EndGameRequest {
+  idPlaysession: number;
+}
+
+export interface EndGameRespose {
+  idPlaysession: number;
+  bonusRestricted: number;
+  bonusNonrestricted: number;
+}
 export interface DrawResponse {
   cards: number[];
   bonusNonrestricted: number;
@@ -142,6 +200,13 @@ class PokerGame extends SimpleObject {
 }
 
 class PokerServiceMock {
+  endGame(endGameRequest: EndGameRequest): Promise<EndGameRespose> {
+    return new Promise<EndGameRespose>(resolve => {
+      setTimeout(() => {
+        resolve(endGameResponse);
+      }, this.getTimeout());
+    });
+  }
   draw(draw: DrawRequest): Promise<DrawResponse> {
     return new Promise<DrawResponse>(resolve => {
       setTimeout(() => {
@@ -326,6 +391,7 @@ class PokerModel extends Model<PokerGame> {
       console.log("realizando apuesta");
       this.service.draw(draw).then(drawResponse => {
         this.getState().lastDraw = drawResponse;
+
         resolve(drawResponse);
       });
     });
@@ -379,6 +445,10 @@ class PokerView implements View<PokerGame> {
       console.error("no se registro el callback");
       this.showErrorMsg("no se registro el callback");
     }
+  }
+
+  endGame() {
+    throw new Error("Method not implemented.");
   }
 
   private getBetParameters(): Bet {
@@ -450,3 +520,4 @@ const presenter = new PokerPresenter(view, model);
 await presenter.initGame();
 await view.bet();
 await view.draw();
+await view.endGame();
