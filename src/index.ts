@@ -1,5 +1,11 @@
 import { resolve } from "path";
-import { Component, Model, Presenter, View } from "./framework";
+import {
+  Model,
+  ObservableChange,
+  Presenter,
+  SimpleObject,
+  View,
+} from "./framework";
 import "./style.css";
 import { sum } from "./sum";
 import { config } from "process";
@@ -125,10 +131,11 @@ class Hand {
   cards: Card[] = [];
 }
 
-class PokerGame {
+class PokerGame extends SimpleObject {
   actualHand?: Hand | number[];
   actualBet?: Bet;
   actualPlaysession?: PlaySession;
+  lastDraw?: DrawResponse;
   actualBalance?: Balance;
   actualConfig?: Config;
   actualPrizes?: Prizes;
@@ -272,7 +279,7 @@ class PokerModel extends Model<PokerGame> {
       console.log("cargando configuracion");
       this.service.loadConfig().then(config => {
         this.getState().actualConfig = config;
-        this.update();
+
         resolve();
       });
     });
@@ -283,7 +290,7 @@ class PokerModel extends Model<PokerGame> {
       console.log("cargando prizes");
       this.service.loadPrizes().then(prizes => {
         this.getState().actualPrizes = prizes;
-        this.update();
+
         resolve();
       });
     });
@@ -294,7 +301,7 @@ class PokerModel extends Model<PokerGame> {
       console.log("cargando balance");
       this.service.loadBalance().then(balance => {
         this.getState().actualBalance = balance;
-        this.update();
+
         resolve();
       });
     });
@@ -307,7 +314,7 @@ class PokerModel extends Model<PokerGame> {
       this.service.bet(bet).then(playsesion => {
         this.getState().actualPlaysession = playsesion;
         this.getState().actualHand = playsesion.cards;
-        this.update();
+
         resolve(playsesion);
       });
     });
@@ -318,7 +325,7 @@ class PokerModel extends Model<PokerGame> {
     return new Promise<DrawResponse>(resolve => {
       console.log("realizando apuesta");
       this.service.draw(draw).then(drawResponse => {
-        this.update();
+        this.getState().lastDraw = drawResponse;
         resolve(drawResponse);
       });
     });
@@ -326,16 +333,11 @@ class PokerModel extends Model<PokerGame> {
 }
 
 class PokerView implements View<PokerGame> {
-  model: PokerModel;
   betCallback?: (bet: Bet) => Promise<void>;
   drawCallback?: (draw: DrawRequest) => Promise<void>;
 
-  constructor(model: PokerModel) {
-    this.model = model;
-  }
-
-  render(): void {
-    console.log("render model");
+  render(changhe: ObservableChange<PokerGame>): void {
+    console.log("render model", changhe);
   }
   showLoadMsg(msg = ""): void {
     console.log(msg, "cargando ....");
@@ -392,38 +394,37 @@ class PokerView implements View<PokerGame> {
     //TODO leer de la interfaz
     return drawRequest;
   }
-
-  getModel(): Model<PokerGame> {
-    return this.model;
-  }
 }
 
 class PokerPresenter extends Presenter<PokerGame> {
   constructor(view: PokerView, model: PokerModel) {
     super(view, model);
 
-    view.subscribeBetCallback(this.betCallback);
-    view.subscribeDrawCallback(this.drawCallback);
+    view.subscribeBetCallback(this.setBetCallBack());
+    view.subscribeDrawCallback(this.setDrawCallback());
     //this.initGame().catch(console.error);
   }
-  async betCallback(bet: Bet): Promise<void> {
-    const model = this.getModel() as PokerModel;
 
-    try {
-      await model.betRequest(bet);
-    } catch (e) {
-      console.error("", e);
-    }
+  setBetCallBack() {
+    const model = this.getModel() as PokerModel;
+    return async (bet: Bet): Promise<void> => {
+      try {
+        await model.betRequest(bet);
+      } catch (e) {
+        console.error("", e);
+      }
+    };
   }
 
-  async drawCallback(draw: DrawRequest): Promise<void> {
+  setDrawCallback() {
     const model = this.getModel() as PokerModel;
-
-    try {
-      await model.drawRequest(draw);
-    } catch (e) {
-      console.error("", e);
-    }
+    return async (draw: DrawRequest): Promise<void> => {
+      try {
+        await model.drawRequest(draw);
+      } catch (e) {
+        console.error("", e);
+      }
+    };
   }
 
   async initGame() {
@@ -443,7 +444,7 @@ class PokerPresenter extends Presenter<PokerGame> {
 
 const pokerGame = new PokerGame();
 const model = new PokerModel(pokerGame);
-const view = new PokerView(model);
+const view = new PokerView();
 const presenter = new PokerPresenter(view, model);
 
 await presenter.initGame();
